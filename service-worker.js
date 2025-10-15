@@ -1,4 +1,4 @@
-const CACHE_NAME = 'amiaditv-cache-v1';
+const CACHE_NAME = 'amdi-cache-v1';
 const CORE_ASSETS = [
   './AmiAdiTV.html',
   './manifest.webmanifest'
@@ -37,6 +37,7 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
 
 
 

@@ -1,6 +1,6 @@
 {
-  "name": "AmiAdi-TV",
-  "short_name": "AmiAdiTV",
+  "name": "AMDI TV",
+  "short_name": "AMDI",
   "description": "IPTV for Android TV with remote navigation",
   "start_url": "./AmiAdiTV.html",
   "scope": "./",
@@ -11,16 +11,19 @@
   "categories": ["video", "entertainment"],
   "icons": [
     {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "amdi/icons/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
+
 
 
