@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AmiAdi-TV</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a0a12">
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.11.2/controls.min.css" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0a12;
+    --card: rgba(20, 20, 35, 0.8);
+    --accent: #ff3366;
+    --accent2: #00d4ff;
+    --accent3: #9d4edd;
+    --text: #ffffff;
+    --text-dim: rgba(255, 255, 255, 0.7);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 20% 30%, rgba(255, 51, 102, 0.15), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(0, 212, 255, 0.1), transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(157, 78, 221, 0.08), transparent 50%);
+    pointer-events: none;
+    animation: bgShift 20s ease infinite;
+  }
+  @keyframes bgShift {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
+  }
+
+  /* Splash */
+  #splash {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    z-index: 9999;
+    transition: opacity .8s;
+  }
+  #splash::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 50% 50%, rgba(255, 51, 102, 0.2), transparent 50%),
+      radial-gradient(circle at 30% 70%, rgba(0, 212, 255, 0.15), transparent 50%);
+    animation: splashPulse 2s ease infinite;
+  }
+  @keyframes splashPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+  }
+  .splash-logo {
+    font-size: 5rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--accent3), var(--accent2));
+    background-size: 200% 200%;
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent;
+    animation: gradientFlow 3s ease infinite, logoFloat 2s ease-in-out infinite;
+    position: relative;
+    z-index: 1;
+    letter-spacing: -2px;
+    text-shadow: 0 0 40px rgba(255, 51, 102, 0.5);
+  }
+  @keyframes gradientFlow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  .countdown {
+    font-size: 3rem; 
+    margin-top: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff, var(--accent2));
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    z-index: 1;
+    animation: countScale 1s ease infinite;
+  }
+  @keyframes countScale {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  /* Sidebar */
+  #sidebar {
+    width: 340px;
+    background: rgba(15, 15, 25, 0.8);
+    backdrop-filter: blur(40px) saturate(180%);
+    padding: 40px 28px;
+    border-right: 1px solid rgba(255,255,255,.08);
+    overflow-y: auto;
+    display: none;
+    z-index: 2;
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.3);
+  }
+  #sidebar::-webkit-scrollbar { width: 6px; }
+  #sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+  }
+  #sidebar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent), var(--accent3));
+    border-radius: 10px;
+    transition: all .3s;
+  }
+  #sidebar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--accent2), var(--accent));
+  }
+  #sidebar h2 {
+    font-size: 2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--accent3), var(--accent2));
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 32px;
+    letter-spacing: -1px;
+    animation: gradientFlow 3s ease infinite;
+  }
+  #category-list li {
+    list-style: none;
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.03);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255,255,255,0.05);
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+  }
+  #category-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: linear-gradient(180deg, var(--accent), var(--accent3));
+    transform: scaleY(0);
+    transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  #category-list li:hover {
+    background: rgba(255,255,255,0.08);
+    transform: translateX(8px);
+    border-color: rgba(255, 51, 102, 0.3);
+    box-shadow: 0 4px 20px rgba(255, 51, 102, 0.15);
+  }
+  #category-list li:hover::before {
+    transform: scaleY(1);
+  }
+  #category-list li.active {
+    background: linear-gradient(135deg, rgba(255, 51, 102, 0.2), rgba(157, 78, 221, 0.15));
+    border-color: rgba(255, 51, 102, 0.5);
+    box-shadow: 0 4px 25px rgba(255, 51, 102, 0.2);
+  }
+  #category-list li.active::before {
+    transform: scaleY(1);
+  }
+
+  /* Main */
+  #main {
+    flex: 1;
+    padding: 50px;
+    display: none;
+    overflow-y: auto;
+    position: relative;
+  }
+  #main::-webkit-scrollbar { width: 8px; }
+  #main::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  #main::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent), var(--accent3));
+    border-radius: 10px;
+  }
+  #category-title {
+    font-size: 3rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #fff, var(--accent2), var(--accent3));
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 40px;
+    letter-spacing: -2px;
+    animation: gradientFlow 3s ease infinite;
+    position: relative;
+  }
+  #category-title::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 0;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    border-radius: 2px;
+  }
+  #cards-area {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 28px;
+  }
+
+  .channel-card {
+    border-radius: 20px;
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all .4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+  .channel-card:focus-visible, .channel-card.tv-focused {
+    outline: 4px solid var(--accent2);
+    outline-offset: 2px;
+    transform: translateY(-6px) scale(1.015);
+    box-shadow: 0 0 0 2px rgba(0,212,255,0.5), 0 12px 24px rgba(0, 212, 255, 0.15);
+  }
+  .channel-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 51, 102, 0.1), rgba(0, 212, 255, 0.1));
+    opacity: 0;
+    transition: opacity .4s;
+  }
+  .channel-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(255, 51, 102, 0.25), 0 0 0 1px rgba(255, 51, 102, 0.3);
+    border-color: rgba(255, 51, 102, 0.5);
+  }
+  .channel-card:hover::before {
+    opacity: 1;
+  }
+  .channel-thumb-wrapper {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, rgba(20, 20, 35, 0.9), rgba(15, 15, 30, 0.9));
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .channel-thumb-wrapper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+    pointer-events: none;
+  }
+  .channel-thumb {
+    max-width: 85%;
+    max-height: 85%;
+    object-fit: contain;
+    transition: transform .5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  }
+  .channel-card:hover .channel-thumb {
+    transform: scale(1.15) rotate(2deg);
+  }
+  .channel-info {
+    padding: 18px;
+    position: relative;
+    z-index: 1;
+  }
+  .channel-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .channel-sub {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  /* Player */
+  #player-overlay {
+    position: fixed; inset: 0;
+    background: #000;
+    display: none;
+    z-index: 999;
+  }
+  #video { width: 100%; height: 100%; }
+
+  /* TV focus styles for sidebar */
+  #category-list li:focus-visible, #category-list li.tv-focused {
+    outline: 4px solid var(--accent2);
+    outline-offset: 4px;
+    transform: translateX(8px);
+  }
+
+  /* On TV, hide native focus ring artifacts on click */
+  [tabindex]:focus { outline: none; }
+
+  /* Toast */
+  .toast-container {
+    position: fixed; 
+    top: 30px; 
+    right: 30px;
+    z-index: 10000;
+  }
+  .toast {
+    background: rgba(15, 15, 25, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 16px 24px;
+    border-radius: 14px;
+    margin-bottom: 12px;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    animation: toastSlide .5s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  @keyframes toastSlide {
+    from { 
+      opacity: 0; 
+      transform: translateX(100px) scale(0.8); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateX(0) scale(1); 
+    }
+  }
+</style>
+
+<!-- Splash Screen -->
+<div id="splash">
+  <div class="splash-logo">AmiAdi-TV</div>
+  <div class="countdown" id="countdown">3</div>
+</div>
+
+<!-- Main UI -->
+<div style="display:flex;height:100%;">
+  <div id="sidebar">
+    <h2>AmiAdi-TV</h2>
+    <ul id="category-list"></ul>
+  </div>
+
+  <div id="main">
+    <h2 id="category-title">All Channels</h2>
+    <div id="cards-area"></div>
+  </div>
+</div>
+
+<!-- Player -->
+<div id="player-overlay">
+  <video id="video" autoplay controls playsinline></video>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+<script src="https://dbghelp.github.io/M3U8Interpreter.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const splash = document.getElementById('splash');
+  const countdownElem = document.getElementById('countdown');
+  let count = 3;
+  const timer = setInterval(() => {
+    count--;
+    if (count > 0) countdownElem.textContent = count;
+    else {
+      clearInterval(timer);
+      splash.style.opacity = 0;
+      setTimeout(() => splash.remove(), 800);
+      initApp();
+    }
+  }, 1000);
+
+  function initApp() {
+    document.getElementById('sidebar').style.display = 'block';
+    document.getElementById('main').style.display = 'block';
+    const defaultM3U = 'https://raw.githubusercontent.com/JaiezAna/tvku/refs/heads/main/tvku.m3u';
+    const video = document.getElementById('video');
+    const playerOverlay = document.getElementById('player-overlay');
+    const cardsArea = document.getElementById('cards-area');
+    const categoryList = document.getElementById('category-list');
+    const categoryTitle = document.getElementById('category-title');
+    shaka.polyfill.installAll();
+    const shakaPlayer = new shaka.Player(video);
+    let categories = {};
+
+    // TV focus/navigation state
+    let focusArea = 'sidebar'; // 'sidebar' | 'grid' | 'player'
+    let sidebarIndex = 0;
+    let gridIndex = 0;
+    let currentCategoryKey = null;
+
+    function showToast(msg, time=2000) {
+      let c = document.querySelector('.toast-container');
+      if(!c) {
+        c = document.createElement('div');
+        c.className = 'toast-container';
+        document.body.appendChild(c);
+      }
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), time);
+    }
+
+    async function loadPlaylist() {
+      try {
+        const res = await fetch(defaultM3U);
+        const text = await res.text();
+        const parser = new M3U8Interpreter(text);
+        parser.parse();
+        const channels = parser.getChannels();
+        categories = {};
+        channels.forEach(ch => {
+          const cat = ch.groupTitle || 'Ungrouped';
+          if(!categories[cat]) categories[cat] = [];
+          categories[cat].push(ch);
+        });
+        renderCategoryList();
+        const first = Object.keys(categories)[0];
+        if(first) selectCategory(first);
+      } catch {
+        showToast('Gagal memuat playlist');
+      }
+    }
+
+    function renderCategoryList() {
+      categoryList.innerHTML = '';
+      Object.keys(categories).sort().forEach((cat, idx) => {
+        const li = document.createElement('li');
+        li.textContent = cat;
+        li.setAttribute('tabindex', '0');
+        li.dataset.index = String(idx);
+        li.onclick = () => selectCategory(cat);
+        categoryList.appendChild(li);
+      });
+      // reset sidebar focus
+      sidebarIndex = 0;
+      setTimeout(applySidebarFocus, 0);
+    }
+
+    function selectCategory(cat) {
+      categoryTitle.textContent = cat;
+      [...categoryList.children].forEach(li => li.classList.toggle('active', li.textContent===cat));
+      cardsArea.innerHTML = '';
+      currentCategoryKey = cat;
+      categories[cat].forEach((ch, idx) => {
+        const card = document.createElement('div');
+        card.className = 'channel-card';
+        card.setAttribute('tabindex', '0');
+        card.dataset.index = String(idx);
+        card.innerHTML = `
+          <div class="channel-thumb-wrapper">
+            <img class="channel-thumb" src="${ch.tvgLogo || ''}" alt="${ch.channelName}">
+          </div>
+          <div class="channel-info">
+            <div class="channel-name">${ch.channelName}</div>
+            <div class="channel-sub">${ch.groupTitle || ''}</div>
+          </div>`;
+        card.onclick = () => playChannel(ch);
+        cardsArea.appendChild(card);
+      });
+      // reset grid focus on TV
+      gridIndex = 0;
+      setTimeout(applyGridFocus, 0);
+    }
+
+    function playChannel(ch) {
+      const manifest = ch.manifestUrl || ch.url;
+      if(!manifest) return showToast('Channel tidak memiliki URL');
+      playerOverlay.style.display = 'block';
+      shakaPlayer.load(manifest).then(() => video.play()).catch(() => {
+        video.src = manifest;
+        video.play();
+      });
+      showToast('▶️ ' + ch.channelName);
+      focusArea = 'player';
+    }
+
+    // Apply focus helpers
+    function clearTVFocus() {
+      document.querySelectorAll('.tv-focused').forEach(el => el.classList.remove('tv-focused'));
+    }
+    function applySidebarFocus() {
+      if(!categoryList.children.length) return;
+      clearTVFocus();
+      const el = categoryList.children[Math.max(0, Math.min(sidebarIndex, categoryList.children.length - 1))];
+      el.classList.add('tv-focused');
+      el.scrollIntoView({ block: 'nearest' });
+    }
+    function applyGridFocus() {
+      const items = cardsArea.querySelectorAll('.channel-card');
+      if(!items.length) return;
+      clearTVFocus();
+      const el = items[Math.max(0, Math.min(gridIndex, items.length - 1))];
+      el.classList.add('tv-focused');
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+
+    // Estimate columns in the responsive grid to move up/down by row
+    function getGridColumnCount() {
+      const first = cardsArea.querySelector('.channel-card');
+      if(!first) return 1;
+      const style = window.getComputedStyle(cardsArea);
+      const gap = parseFloat(style.gap || '28');
+      const totalWidth = cardsArea.clientWidth;
+      const cardWidth = first.getBoundingClientRect().width;
+      return Math.max(1, Math.floor((totalWidth + gap) / (cardWidth + gap)));
+    }
+
+    function exitPlayerIfOpen() {
+      if(playerOverlay.style.display === 'block') {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+        playerOverlay.style.display = 'none';
+        focusArea = 'grid';
+        applyGridFocus();
+        return true;
+      }
+      return false;
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const key = e.key;
+      // Global back/escape closes player first
+      if(key === 'Escape' || key === 'Backspace') {
+        if(exitPlayerIfOpen()) { e.preventDefault(); return; }
+      }
+
+      // TV DPAD navigation
+      switch (key) {
+        case 'ArrowLeft': {
+          if(focusArea === 'grid') {
+            gridIndex = Math.max(0, gridIndex - 1);
+            applyGridFocus();
+            e.preventDefault();
+          } else if(focusArea === 'sidebar') {
+            // stay
+            e.preventDefault();
+          } else if(focusArea === 'player') {
+            // optional: seek backward 10s
+            video.currentTime = Math.max(0, video.currentTime - 10);
+            showToast('⏪ -10s');
+            e.preventDefault();
+          }
+          break;
+        }
+        case 'ArrowRight': {
+          if(focusArea === 'grid') {
+            const items = cardsArea.querySelectorAll('.channel-card');
+            gridIndex = Math.min(items.length - 1, gridIndex + 1);
+            applyGridFocus();
+            e.preventDefault();
+          } else if(focusArea === 'sidebar') {
+            focusArea = 'grid';
+            applyGridFocus();
+            e.preventDefault();
+          } else if(focusArea === 'player') {
+            video.currentTime = Math.min(video.duration || Infinity, video.currentTime + 10);
+            showToast('⏩ +10s');
+            e.preventDefault();
+          }
+          break;
+        }
+        case 'ArrowUp': {
+          if(focusArea === 'grid') {
+            const cols = getGridColumnCount();
+            gridIndex = Math.max(0, gridIndex - cols);
+            applyGridFocus();
+            e.preventDefault();
+          } else if(focusArea === 'sidebar') {
+            sidebarIndex = Math.max(0, sidebarIndex - 1);
+            applySidebarFocus();
+            e.preventDefault();
+          }
+          break;
+        }
+        case 'ArrowDown': {
+          if(focusArea === 'grid') {
+            const cols = getGridColumnCount();
+            const items = cardsArea.querySelectorAll('.channel-card');
+            gridIndex = Math.min(items.length - 1, gridIndex + cols);
+            applyGridFocus();
+            e.preventDefault();
+          } else if(focusArea === 'sidebar') {
+            const count = categoryList.children.length;
+            sidebarIndex = Math.min(count - 1, sidebarIndex + 1);
+            applySidebarFocus();
+            e.preventDefault();
+          }
+          break;
+        }
+        case 'Enter':
+        case 'NumpadEnter': {
+          if(focusArea === 'sidebar') {
+            const el = categoryList.children[sidebarIndex];
+            if(el) {
+              selectCategory(el.textContent);
+              focusArea = 'grid';
+              applyGridFocus();
+            }
+            e.preventDefault();
+          } else if(focusArea === 'grid') {
+            const items = cardsArea.querySelectorAll('.channel-card');
+            const el = items[gridIndex];
+            if(el) {
+              const idx = Number(el.dataset.index || '0');
+              const ch = categories[currentCategoryKey][idx];
+              if(ch) playChannel(ch);
+            }
+            e.preventDefault();
+          } else if(focusArea === 'player') {
+            if(video.paused) { video.play(); showToast('▶️ Play'); }
+            else { video.pause(); showToast('⏸️ Pause'); }
+            e.preventDefault();
+          }
+          break;
+        }
+        case 'MediaPlayPause': {
+          if(focusArea === 'player') {
+            if(video.paused) { video.play(); showToast('▶️ Play'); }
+            else { video.pause(); showToast('⏸️ Pause'); }
+            e.preventDefault();
+          }
+          break;
+        }
+        case 'Back': // Some remotes report 'Back'
+        case 'BrowserBack': {
+          if(exitPlayerIfOpen()) { e.preventDefault(); }
+          break;
+        }
+        default:
+          break;
+      }
+    });
+
+    loadPlaylist();
+
+    // Register service worker for PWA installability
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+    }
+  }
+});
+</script>
+</html>
